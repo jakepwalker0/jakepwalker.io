@@ -1,15 +1,14 @@
 ---
-
-- name: Ensure that the existing certificate is still valid 2 weeks from now
-  openssl_certificate:
-    path: "/etc/ssl/{{domain_name}}-fullchain.crt"
-    provider: assertonly
-    valid_in: 1209600
-  register: cert_debug
-
 #TODO -- Fix cert validation check
-- debug:
-    var: cert_debug
+#- name: Ensure that the existing certificate is still valid 2 weeks from now
+#  openssl_certificate:
+#    path: "/etc/ssl/{{domain_name}}-chain"
+#    provider: assertonly
+#    valid_in: 1209600
+#  register: cert_debug
+
+#- debug:
+#    var: cert_debug
 
 - name: Create temporary working directory
   tempfile:
@@ -33,11 +32,11 @@
 - name: Ensure ACME account exists
   acme_account:
     account_key_content: "{{ lookup('aws_ssm', '/acme_keys/acme_account' ) }}"
-    acme_version: 1
-    acme_directory: https://acme-v01.api.letsencrypt.org/directory
+    acme_version: 2
+    acme_directory: https://acme-v02.api.letsencrypt.org/directory
     terms_agreed: yes
     contact:
-    - 'mailto:"{{contact_email}}"'
+    - "mailto:{{contact_email}}"
     state: present
   when: reconfigure_acme
 
@@ -48,8 +47,8 @@
     src: "{{temp_dir.path}}/{{domain_name}}-csr"
     cert: "{{temp_dir.path}}/{{domain_name}}-crt"
     challenge: dns-01
-    acme_version: 1
-    acme_directory: https://acme-v01.api.letsencrypt.org/directory
+    acme_version: 2
+    acme_directory: https://acme-v02.api.letsencrypt.org/directory
     # Renew if the certificate is at least 30 days old
     remaining_days: 60
   register: acme_challenge
@@ -77,11 +76,11 @@
     account_email: "{{contact_email}}"
     src: "{{temp_dir.path}}/{{domain_name}}-csr"
     cert: "{{temp_dir.path}}/{{domain_name}}-crt"
-    fullchain: "{{temp_dir.path}}/{{domain_name}}-fullchain.crt"
+    fullchain: "{{temp_dir.path}}/{{domain_name}}-chain"
     chain: "{{temp_dir.path}}/{{domain_name}}-intermediate.crt"
     challenge: dns-01
-    acme_version: 1
-    acme_directory: https://acme-v01.api.letsencrypt.org/directory
+    acme_version: 2
+    acme_directory: https://acme-v02.api.letsencrypt.org/directory
     remaining_days: 60
     data: "{{acme_challenge}}"
 
@@ -99,5 +98,5 @@
 - name: Move cert & key to /etc/ssl
   command: "mv {{temp_dir.path}}/{{item}} /etc/ssl/{{item}}"
   with_items:
-    - "{{domain_name}}-fullchain.crt"
+    - "{{domain_name}}-chain"
     - "{{domain_name}}-key"
