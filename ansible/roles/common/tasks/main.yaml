@@ -1,0 +1,55 @@
+---
+
+- name: Update/Upgrade installed packages
+  yum:
+    name: "*"
+    state: latest
+  retries: 3
+  delay: 3
+  register: yum_result
+  until: yum_result.rc == 0
+
+- name: Install common packages
+  yum:
+    name: "{{packages}}"
+    state: latest
+  vars:
+    packages:
+    - vim
+    - zip
+    - unzip
+    - python-pip
+    - yum-utils
+
+- name: Update pip and install Python modules
+  pip:
+    name:
+      - pip
+      - setuptools
+      - boto
+      - cryptography
+    state: latest
+
+- name: Set a service-based shell prompt
+  replace:
+    dest: "{{item}}"
+    regexp: (PS1=.*@)\\h(.*)
+    replace: '\1{{ansible_ec2_instance_id}}({{service_name}})\2'
+    backup: yes
+  with_items:
+    - '{{distro_bashrc}}'
+    - '/etc/skel/.bashrc'
+    - '/root/.bashrc'
+    - '/home/{{distro_user}}/.bashrc'
+
+- name: Hardening - Disallow empty passwords over SSH
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^#PermitEmptyPasswords no$'
+    replace: 'PermitEmptyPasswords no'
+
+- name: Hardening - Set SSH MaxAuthTries to 4
+  replace:
+    path: /etc/ssh/sshd_config
+    regexp: '^#MaxAuthTries 6$'
+    replace: 'MaxAuthTries 4'

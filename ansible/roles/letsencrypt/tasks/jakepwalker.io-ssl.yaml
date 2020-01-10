@@ -1,0 +1,103 @@
+---
+
+- name: Ensure that the existing certificate is still valid 2 weeks from now
+  openssl_certificate:
+    path: "/etc/ssl/{{domain_name}}-fullchain.crt"
+    provider: assertonly
+    valid_in: 1209600
+  register: cert_debug
+
+#TODO -- Fix cert validation check
+- debug:
+    var: cert_debug
+
+- name: Create temporary working directory
+  tempfile:
+    state: directory
+    suffix: "-{{domain_name}}"
+  register: temp_dir
+
+- name: "Generate {{domain_name}} private key"
+  openssl_privatekey:
+    path: "{{temp_dir.path}}/{{domain_name}}-key"
+
+- name: "Generate {{domain_name}} CSR"
+  openssl_csr:
+    path: "{{temp_dir.path}}/{{domain_name}}-csr"
+    privatekey_path: "{{temp_dir.path}}/{{domain_name}}-key"
+    country_name: UK
+    organization_name: Jake P Walker
+    email_address: "{{contact_email}}"
+    common_name: "{{domain_name}}"
+
+- name: Ensure ACME account exists
+  acme_account:
+    account_key_content: "{{ lookup('aws_ssm', '/acme_keys/acme_account' ) }}"
+    acme_version: 1
+    acme_directory: https://acme-v01.api.letsencrypt.org/directory
+    terms_agreed: yes
+    contact:
+    - 'mailto:"{{contact_email}}"'
+    state: present
+  when: reconfigure_acme
+
+- name: "Create a challenge for {{domain_name}} using a account key file."
+  letsencrypt:
+    account_key_content: "{{ lookup('aws_ssm', '/acme_keys/acme_account' ) }}"
+    account_email: "{{contact_email}}"
+    src: "{{temp_dir.path}}/{{domain_name}}-csr"
+    cert: "{{temp_dir.path}}/{{domain_name}}-crt"
+    challenge: dns-01
+    acme_version: 1
+    acme_directory: https://acme-v01.api.letsencrypt.org/directory
+    # Renew if the certificate is at least 30 days old
+    remaining_days: 60
+  register: acme_challenge
+
+- name: Create TXT record for DNS validation
+  local_action:
+    module: route53
+    zone: "{{service_name}}"
+    record: "{{acme_challenge.challenge_data[domain_name]['dns-01'].record}}"
+    type: TXT
+    ttl: 20
+    value: "\"{{acme_challenge.challenge_data[domain_name]['dns-01'].resource_value}}\""
+    overwrite: yes
+    state: present
+  become: no
+  when: acme_challenge is changed
+
+- name: Wait for DNS to update
+  pause:
+    seconds: 30
+
+- name: Let the challenge be validated and retrieve the cert and intermediate certificate
+  letsencrypt:
+    account_key_content: "{{ lookup('aws_ssm', '/acme_keys/acme_account' ) }}"
+    account_email: "{{contact_email}}"
+    src: "{{temp_dir.path}}/{{domain_name}}-csr"
+    cert: "{{temp_dir.path}}/{{domain_name}}-crt"
+    fullchain: "{{temp_dir.path}}/{{domain_name}}-fullchain.crt"
+    chain: "{{temp_dir.path}}/{{domain_name}}-intermediate.crt"
+    challenge: dns-01
+    acme_version: 1
+    acme_directory: https://acme-v01.api.letsencrypt.org/directory
+    remaining_days: 60
+    data: "{{acme_challenge}}"
+
+- name: Remove stale TXT record
+  local_action:
+    module: route53
+    zone: "{{service_name}}"
+    record: "{{acme_challenge.challenge_data[domain_name]['dns-01'].record}}"
+    type: TXT
+    ttl: 20
+    value: "\"{{acme_challenge.challenge_data[domain_name]['dns-01'].resource_value}}\""
+    state: absent
+  become: no
+
+- name: Move cert & key to /etc/ssl
+  command: "mv {{temp_dir.path}}/{{item}} /etc/ssl/{{item}}"
+  with_items:
+    - "{{domain_name}}-fullchain.crt"
+    - "{{domain_name}}-key"

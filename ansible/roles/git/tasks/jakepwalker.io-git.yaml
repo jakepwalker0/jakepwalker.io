@@ -1,0 +1,32 @@
+---
+
+- name: Apply Github deploy key to distro user
+  copy:
+    content: "{{ lookup('aws_ssm', '/github_keys/{{service_name}}-html' ) }}"
+    dest: "/home/{{distro_user}}/.ssh/id_rsa"
+    owner: "{{distro_user}}"
+    group: "{{distro_user}}"    
+    mode: 0600
+
+- name: Apply Github deploy public key to distro user 
+  copy:
+    content: "{{ lookup('aws_ssm', '/github_keys/{{service_name}}-html.pub' ) }}"
+    dest: "/home/{{distro_user}}/.ssh/id_rsa.pub"
+    owner: "{{distro_user}}"
+    group: "{{distro_user}}"    
+    mode: 0644
+
+- name: Add Github's IP to known_hosts file for distro user
+  copy:
+    src: known_hosts
+    dest: "/home/{{distro_user}}/.ssh/known_hosts"
+    owner: "{{distro_user}}"
+    group: "{{distro_user}}"
+
+- name: Clone website content repo to distro user home dir
+  git:
+    repo: git@github.com:jakepwalker0/jakepwalker.io-html.git
+    dest: "/home/{{distro_user}}/{{service_name}}"
+    force: yes
+  become: yes
+  become_user: "{{distro_user}}"

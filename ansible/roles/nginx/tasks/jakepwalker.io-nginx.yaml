@@ -1,0 +1,7 @@
+---
+
+- name: Copy site configuration
+  copy:
+    src: "{{service_name}}.conf"
+    dest: /etc/nginx/conf.d/{{service_name}}.conf
+  notify: restart nginx

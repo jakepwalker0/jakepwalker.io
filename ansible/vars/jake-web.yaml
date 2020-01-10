@@ -1,0 +1,12 @@
+---
+service_name: jakepwalker.io
+security_groups: jakepwalker-website
+instance_type: t3.micro
+host_group: webservers
+distro_user: centos
+distro_bashrc: /etc/bashrc
+
+domain_names:
+  - jakepwalker.io
+
+contact_email: jakepwalker0@gmail.com

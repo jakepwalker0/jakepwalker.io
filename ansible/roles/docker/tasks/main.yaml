@@ -1,0 +1,32 @@
+---
+
+- name: Add Docker GPG key.
+  rpm_key:
+    key: https://download.docker.com/linux/{{ ansible_distribution|lower }}/gpg
+    state: present
+
+- name: Add Docker repo
+  get_url:
+    url: https://download.docker.com/linux/{{ ansible_distribution|lower }}/docker-ce.repo
+    dest: /etc/yum.repos.d/docer-ce.repo
+
+- name: Install Docker.
+  package:
+    name: docker-ce
+    state: latest
+
+- name: Install Docker SDK
+  pip:
+    name:
+      - docker
+    state: latest
+    extra_args: --ignore-installed
+
+- name: Start/Enable Docker service
+  service:
+    name: docker
+    state: started
+    enabled: yes
+
+- import_tasks: "{{service_name}}-docker.yaml"
+  when: run_containers

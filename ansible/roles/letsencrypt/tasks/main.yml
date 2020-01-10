@@ -1,0 +1,6 @@
+---
+
+- include_tasks: "{{service_name}}-ssl.yaml"
+  loop: "{{domain_names}}"
+  loop_control:
+    loop_var: domain_name

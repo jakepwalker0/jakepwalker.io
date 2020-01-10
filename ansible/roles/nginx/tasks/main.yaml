@@ -1,0 +1,15 @@
+---
+
+- name: Install Nginx
+  yum:
+    name: nginx
+    state: present
+
+- name: Start/Enable Nginx service
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+
+- import_tasks: "{{service_name}}-nginx.yaml"
+  when: configure_sites

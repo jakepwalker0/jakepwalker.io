@@ -1,0 +1,12 @@
+---
+
+- name: Install Git
+  yum:
+    name: "{{packages}}"
+    state: latest
+  vars:
+    packages:
+    - git
+
+- import_tasks: "{{service_name}}-git.yaml"
+  when: configure_repos
