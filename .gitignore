@@ -1,0 +1,17 @@
+DS_Store
+.DS_Store?
+._*
+.Trashes
+Icon?
+ehthumbs.db
+Thumbs.db
+*.swp
+*.retry
+
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
