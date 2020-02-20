@@ -6,13 +6,6 @@ metadata:
     name: jakepwalker-io
 ---
 apiVersion: v1
-kind: Namespace
-metadata:
-  name: ingress
-  labels:
-    name: ingress
----
-apiVersion: v1
 kind: Service
 metadata:
   name: frontend
@@ -22,8 +15,9 @@ metadata:
 spec:
   type: NodePort
   ports:
-  - port: 8080
-    targetPort: 4000
+  - port: 4000
+    nodePort: 30080
+    name: http
   selector:
     name: backend
 ---

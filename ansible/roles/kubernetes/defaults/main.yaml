@@ -1,0 +1,14 @@
+---
+run_k8s_cluster: true
+
+kubectl_version: "1.17.2"
+kubectl_download_filetype: "binary"
+kubectl_checksum_archive: "sha512:c5cd8954953ea348318f207c99c9dcb679d73dbaf562ac72660f7dab85616fd45b0f349d49eae9ea1f6aac7cae5bba839bf70f40b8be686d35605ae147339399"
+kubectl_checksum_binary: "sha512:0e071381d96485ac4cc14fcaba19913953b11749a46d3657c6d9b8f839a0e91dfdc999eed5a9de6704f3545b4ac8d8e545c815e63a19d441a17442b7926a1931"
+kubectl_bin_directory: "/usr/local/bin"
+kubectl_tmp_directory: "{{ lookup('env', 'TMPDIR') | default('/tmp',true) }}"
+kubectl_owner: "root"
+kubectl_group: "root"
+kubectl_binary_mode: "0755"
+kubectl_os: "linux"
+kubectl_arch: "amd64" # other possible values: "386","arm64","arm","ppc64le","s390x"

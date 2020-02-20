@@ -1,0 +1,13 @@
+---
+
+- name: Spin up site in Jekyll Docker container
+  docker_container:
+    name: "{{service_name}}"
+    image: jekyll/jekyll:4.0
+    state: started
+    published_ports:
+      - "9000:4000"
+    command: jekyll serve
+    volumes: 
+      - "/home/{{distro_user}}/{{service_name}}:/srv/jekyll"
+      - "/home/{{distro_user}}/{{service_name}}/vendor/bundle:/usr/local/bundle"
